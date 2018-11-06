@@ -91,9 +91,9 @@ export default class Carousel extends Component {
     if (this.node) {
       this.node.ownerDocument.addEventListener('mousemove', this.onMouseMove, true);
       this.node.ownerDocument.addEventListener('mouseup', this.onMouseUpTouchEnd, true);
-      this.node.ownerDocument.addEventListener('touchstart', this.simulatedEvent, true);
-      this.node.ownerDocument.addEventListener('touchmove', this.simulatedEvent, { passive: false });
-      this.node.ownerDocument.addEventListener('touchend', this.simulatedEvent, true);
+      this.node.ownerDocument.addEventListener('touchstart', this.simulateEvent, true);
+      this.node.ownerDocument.addEventListener('touchmove', this.simulateEvent, { passive: false });
+      this.node.ownerDocument.addEventListener('touchend', this.simulateEvent, true);
     }
 
     // setting size of a carousel in state
@@ -134,8 +134,9 @@ export default class Carousel extends Component {
     if (this.node) {
       this.node.ownerDocument.removeEventListener('mousemove', this.onMouseMove);
       this.node.ownerDocument.removeEventListener('mouseup', this.onMouseUp);
-      this.node.ownerDocument.removeEventListener('touchmove', this.simulatedEvent);
-      this.node.ownerDocument.removeEventListener('touchend', this.simulatedEvent);
+      this.node.ownerDocument.removeEventListener('touchstart', this.simulateEvent);
+      this.node.ownerDocument.removeEventListener('touchmove', this.simulateEvent);
+      this.node.ownerDocument.removeEventListener('touchend', this.simulateEvent);
     }
 
     window.removeEventListener('resize', this.onResize);
@@ -400,17 +401,32 @@ export default class Carousel extends Component {
     this.resetInterval();
   };
 
-  simulatedEvent = event => {
+  simulateEvent = event => {
     const touch = event.changedTouches[0];
-    const simulatedEvent = document.createEvent('MouseEvent');
-
-    simulatedEvent.initMouseEvent(
-      { touchstart: 'mousedown', touchmove: 'mousemove', touchend: 'mouseup' }[event.type],
-      true, true, window, 1,
-      touch.screenX, touch.screenY, touch.clientX, touch.clientY,
-      false, false, false, false, 0, null
+    const {
+      screenX,
+      screenY,
+      clientX,
+      clientY,
+    } = touch;
+    const events = {
+      touchstart: 'mousedown',
+      touchmove: 'mousemove',
+      touchend: 'mouseup'
+    }
+    const simulatedEvent = new MouseEvent(
+      events[event.type],
+      {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        detail: 1,
+        screenX,
+        screenY,
+        clientX,
+        clientY,
+      }
     );
-
     touch.target.dispatchEvent(simulatedEvent);
   };
 
